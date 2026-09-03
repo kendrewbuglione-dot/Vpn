@@ -47,6 +47,8 @@ jobs:
           bash patch_manifest.sh || true
           sed -i 's/minSdkVersion .*/minSdkVersion 21/g' android/app/build.gradle || true
           flutter pub get
+          flutter analyze
+          flutter test || true
           flutter build apk --release
 
       - name: Выгрузка APK в артефакты
