@@ -1,0 +1,6 @@
+{
+  "name": "SingBox Mobile VPN Engineer Studio",
+  "description": "Senior Mobile & Network Engineering suite and live code workbench for Android unrooted VPN (Flutter Dart, sing-box Go core, JNI Kotlin).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
