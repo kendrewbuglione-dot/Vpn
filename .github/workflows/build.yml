@@ -58,7 +58,7 @@ jobs:
 
       - name: Сборка релизного APK
         run: |
-          flutter create . --platforms=android
+          flutter create . --project-name vpn --platforms=android
           echo "dependencies { implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar']) }" >> android/app/build.gradle
           flutter build apk --release
           flutter pub get
