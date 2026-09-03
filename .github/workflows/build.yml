@@ -61,16 +61,16 @@ jobs:
           flutter create . --project-name vpn --platforms=android
           bash patch_manifest.sh
           echo "dependencies { implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar']) }" >> android/app/build.gradle
-          flutter build apk --release
+          flutter build apk --release -v
           flutter create . --project-name vpn --platforms=android
           sed -i '/<application/a \        <meta-data android:name="flutterEmbedding" android:value="2"/>' android/app/src/main/AndroidManifest.xml
           echo "dependencies { implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar']) }" >> android/app/build.gradle
-          flutter build apk --release
+          flutter build apk --release -v
           flutter create . --project-name vpn --platforms=android
           echo "dependencies { implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar']) }" >> android/app/build.gradle
-          flutter build apk --release
+          flutter build apk --release -v
           flutter pub get
-          flutter build apk --release --split-per-abi
+          flutter build apk --release -v --split-per-abi
 
       - name: Выгрузка APK в артефакты
         uses: actions/upload-artifact@v4
