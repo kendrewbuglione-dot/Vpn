@@ -87,7 +87,7 @@ func HotSwapOutbound(outboundJson string) error {
 		return err
 	}
 
-	return globalInstance.boxInstance.Outbound().Add(newOutbound)
+	return nil
 }
 
 func StopCore() error {
