@@ -44,11 +44,11 @@ jobs:
           go clean -modcache
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
-          gomobile init
+          go get -tool golang.org/x/mobile/cmd/gobind && gomobile init
           gomobile bind -target=android -androidapi 21 -o android/app/libs/vpncore.aar ./...
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
           go install golang.org/x/mobile/cmd/gomobile@latest
-          gomobile init
+          go get -tool golang.org/x/mobile/cmd/gobind && gomobile init
 
           mkdir -p android/app/libs
           cd native/vpncore
