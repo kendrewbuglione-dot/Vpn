@@ -58,6 +58,9 @@ jobs:
 
       - name: Сборка релизного APK
         run: |
+          flutter create . --platforms=android
+          echo "dependencies { implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar']) }" >> android/app/build.gradle
+          flutter build apk --release
           flutter pub get
           flutter build apk --release --split-per-abi
 
