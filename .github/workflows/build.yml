@@ -30,7 +30,7 @@ jobs:
 
       - name: Сборка vpncore.aar через gomobile
         run: |
-          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
+          
           export GOTOOLCHAIN=auto
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
