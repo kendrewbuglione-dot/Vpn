@@ -34,7 +34,6 @@ jobs:
           export GOTOOLCHAIN=auto
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
-          go get -tool golang.org/x/mobile/cmd/gobind
           gomobile init
           mkdir -p android/app/libs
           cd native/vpncore
