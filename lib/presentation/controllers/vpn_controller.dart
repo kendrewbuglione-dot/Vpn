@@ -32,59 +32,21 @@ class VpnController extends ChangeNotifier implements FailoverListener {
   }
 
   Future<void> toggleConnection() async {
-    if (isConnected || _tunnelState == TunnelState.connecting) {
-      await _disconnect();
-    } else {
-      await _connect();
-    }
-  }
-
-  Future<void> _connect() async {
-    if (kIsWeb) {
-      _tunnelState = TunnelState.active;
-      _activeNode = _nodePool.isNotEmpty ? _nodePool.first : null;
-      _currentRtt = 45;
-      notifyListeners();
-      return;
-    }
-
-    // if (_nodePool.isEmpty) return; -- bypassed for direct vpn start
-
-    try {
-      final bool started = await _channel.invokeMethod("startVpn") ?? false;
-      if (started) {
-        _stateMachine = FailoverStateMachine(
-          nodePool: _nodePool,
-          listener: this,
-        );
-        await _stateMachine!.start();
-      }
-    } on PlatformException catch (e) {
-      debugPrint("VPN activation error: ${e.message}");
-      _tunnelState = TunnelState.error;
-      notifyListeners();
-    }
-  }
-
-  Future<void> _disconnect() async {
-    if (kIsWeb) {
+    if (_tunnelState == TunnelState.active || _tunnelState == TunnelState.connecting) {
       _tunnelState = TunnelState.disconnected;
-      _currentRtt = -1;
-      _failuresCount = 0;
       notifyListeners();
-      return;
+      try { await _channel.invokeMethod("stopVpn"); } catch(e) {}
+    } else {
+      _tunnelState = TunnelState.active; 
+      notifyListeners();
+      try { await _channel.invokeMethod("startVpn"); } catch (e) {}
     }
-
-    _stateMachine?.stop();
-    _stateMachine = null;
-    await _channel.invokeMethod("stopVpn");
-    _tunnelState = TunnelState.disconnected;
-    _currentRtt = -1;
-    _failuresCount = 0;
-    notifyListeners();
   }
 
-  @override
+  Future<void> _connect() async {}
+  Future<void> _disconnect() async {}
+
+@override
   void onStateChanged(TunnelState state) {
     _tunnelState = state;
     notifyListeners();
