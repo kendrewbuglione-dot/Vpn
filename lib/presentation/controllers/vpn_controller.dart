@@ -35,11 +35,26 @@ class VpnController extends ChangeNotifier implements FailoverListener {
     if (_tunnelState == TunnelState.active || _tunnelState == TunnelState.connecting) {
       _tunnelState = TunnelState.disconnected;
       notifyListeners();
-      try { await _channel.invokeMethod("stopVpn"); } catch(e) {}
+      try {
+        await _channel.invokeMethod("stopVpn");
+      } catch (e) {
+        print("Error stopping VPN: $e");
+      }
     } else {
-      _tunnelState = TunnelState.active; 
+      _tunnelState = TunnelState.connecting;
       notifyListeners();
-      try { await _channel.invokeMethod("startVpn"); } catch (e) {}
+      try {
+        final bool? success = await _channel.invokeMethod<bool>("startVpn");
+        if (success == true) {
+          _tunnelState = TunnelState.active;
+        } else {
+          _tunnelState = TunnelState.disconnected;
+        }
+      } catch (e) {
+        print("Error starting VPN: $e");
+        _tunnelState = TunnelState.disconnected;
+      }
+      notifyListeners();
     }
   }
 
