@@ -62,7 +62,7 @@ class MainActivity: FlutterActivity() {
     private fun startVpnServiceDirectly(configJson: String) {
         val serviceIntent = Intent(this, CustomVpnService::class.java).apply {
             action = CustomVpnService.ACTION_START
-            putExtra(CustomVpnService.EXTRA_CONFIG, configJson)
+            putExtra("config_json", configJson)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
