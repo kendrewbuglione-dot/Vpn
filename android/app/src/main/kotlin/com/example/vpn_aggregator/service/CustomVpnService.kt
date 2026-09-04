@@ -116,7 +116,7 @@ class CustomVpnService : VpnService(), SocketProtector {
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("VPN Защита")
             .setContentText(statusText)
-            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setSmallIcon(applicationInfo.icon)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
