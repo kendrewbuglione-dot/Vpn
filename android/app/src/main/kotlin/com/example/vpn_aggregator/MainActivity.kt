@@ -19,12 +19,23 @@ class MainActivity: FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startVpn" -> {
-                    val intent = VpnService.prepare(this)
-                    if (intent != null) {
+                    val prepareIntent = VpnService.prepare(this)
+                    if (prepareIntent != null) {
                         pendingResult = result
-                        startActivityForResult(intent, VPN_REQUEST_CODE)
+                        try {
+                            startActivityForResult(prepareIntent, VPN_REQUEST_CODE)
+                        } catch (e: Exception) {
+                            result.error("VPN_PREPARE_ERROR", e.message, null)
+                        }
                     } else {
-                        startVpnAction(CustomVpnService.ACTION_START)
+                        val serviceIntent = Intent(this, CustomVpnService::class.java).apply {
+                            action = CustomVpnService.ACTION_START
+                        }
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            startForegroundService(serviceIntent)
+                        } else {
+                            startService(serviceIntent)
+                        }
                         result.success(true)
                     }
                 }
@@ -44,7 +55,11 @@ class MainActivity: FlutterActivity() {
         val intent = Intent(this, CustomVpnService::class.java).apply {
             this.action = action
         }
-        startService(intent)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
