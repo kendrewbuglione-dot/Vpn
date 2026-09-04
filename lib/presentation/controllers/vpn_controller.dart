@@ -1,84 +1,85 @@
-import "package:flutter/material.dart";
-import "package:flutter/services.dart";
-import "package:flutter/foundation.dart";
-import "../../core/models/proxy_node.dart";
-import "../../core/state/failover_state_machine.dart";
+import 'package:flutter/services.dart';
+import 'dart:async';
 
-class VpnController extends ChangeNotifier implements FailoverListener {
-  static const MethodChannel _channel = MethodChannel("com.example.vpn_aggregator/vpn_control");
+enum VpnConnectionState { disconnected, connecting, connected, disconnecting, error }
 
-  FailoverStateMachine? _stateMachine;
-  List<ProxyNode> _nodePool = [
-    ProxyNode.parseVlessUri("vless://e1d88bb0-0193-4b6a-9d6e-821b36e81a34@nl.freefq.com:443?security=reality&sni=yahoo.com&fp=chrome&pbk=1Ab2Cd3Ef4Gh5Ij6Kl7Mn8Op9Qr0St1Uv2Wx3Yz4=&type=tcp&flow=xtls-rprx-vision#Нидерланды (Бесплатно)")!,
-    ProxyNode.parseVlessUri("vless://f2e99cc1-1204-5c7b-ae7f-932c47f92b45@de.freefq.com:443?security=reality&sni=speedtest.net&fp=chrome&pbk=2Bc3De4Fg5Hi6Jk7Lm8No9Pq0Rs1Tu2Vw3Xy4Za5=&type=tcp&flow=xtls-rprx-vision#Германия (Бесплатно)")!,
-    ProxyNode.parseVlessUri("vless://a3b88dd2-3405-6d8c-bf8a-843d58a03c56@fi.freefq.com:443?security=reality&sni=cloudflare.com&fp=chrome&pbk=3Cd4Ef5Gh6Ij7Kl8Mn9Op0Qr1St2Uv3Wx4Yz5Ab6=&type=tcp&flow=xtls-rprx-vision#Финляндия (Бесплатно)")!,
-  ];
+class VpnController {
+  static final VpnController instance = VpnController._internal();
+  factory VpnController() => instance;
+  VpnController._internal();
 
-  TunnelState _tunnelState = TunnelState.disconnected;
-  ProxyNode? _activeNode;
-  int _currentRtt = -1;
-  int _failuresCount = 0;
+  static const MethodChannel _methodChannel =
+      MethodChannel('com.example.vpn_aggregator/vpn_control');
+  static const EventChannel _eventChannel =
+      EventChannel('com.example.vpn_aggregator/events');
 
-  TunnelState get tunnelState => _tunnelState;
-  ProxyNode? get activeNode => _activeNode;
-  int get currentRtt => _currentRtt;
-  int get failuresCount => _failuresCount;
-  List<ProxyNode> get nodePool => _nodePool;
-  bool get isConnected => _tunnelState == TunnelState.active;
+  final StreamController<VpnConnectionState> _stateController =
+      StreamController<VpnConnectionState>.broadcast();
 
-  void loadSubscription(String base64Data) {
-    _nodePool = ProxyNode.parseSubscription(base64Data);
-    notifyListeners();
+  Stream<VpnConnectionState> get connectionStateStream => _stateController.stream;
+  VpnConnectionState _currentState = VpnConnectionState.disconnected;
+  VpnConnectionState get currentState => _currentState;
+
+  void initialize() {
+    _eventChannel.receiveBroadcastStream().listen(
+      _onNativeEventReceived,
+      onError: (error) {
+        print("Platform channel error: $error");
+        _updateState(VpnConnectionState.error);
+      },
+    );
+    _updateState(VpnConnectionState.disconnected);
   }
 
-  Future<void> toggleConnection() async {
-    if (_tunnelState == TunnelState.active || _tunnelState == TunnelState.connecting) {
-      _tunnelState = TunnelState.disconnected;
-      notifyListeners();
-      try {
-        await _channel.invokeMethod("stopVpn");
-      } catch (e) {
-        print("Error stopping VPN: $e");
+  void _onNativeEventReceived(dynamic event) {
+    if (event is String) {
+      switch (event) {
+        case "CONNECTED":
+          _updateState(VpnConnectionState.connected);
+          break;
+        case "DISCONNECTED":
+          _updateState(VpnConnectionState.disconnected);
+          break;
+        default:
+          if (event.startsWith("ERROR")) {
+            _updateState(VpnConnectionState.error);
+          }
       }
-    } else {
-      _tunnelState = TunnelState.connecting;
-      notifyListeners();
-      try {
-        final bool? success = await _channel.invokeMethod<bool>("startVpn");
-        if (success == true) {
-          _tunnelState = TunnelState.active;
-        } else {
-          _tunnelState = TunnelState.disconnected;
-        }
-      } catch (e) {
-        print("Error starting VPN: $e");
-        _tunnelState = TunnelState.disconnected;
-      }
-      notifyListeners();
     }
   }
 
-  Future<void> _connect() async {}
-  Future<void> _disconnect() async {}
-
-@override
-  void onStateChanged(TunnelState state) {
-    _tunnelState = state;
-    notifyListeners();
+  void _updateState(VpnConnectionState state) {
+    if (_currentState == state) return;
+    _currentState = state;
+    _stateController.sink.add(state);
   }
 
-  @override
-  void onNodeRotated(ProxyNode newNode) {
-    _activeNode = newNode;
-    _currentRtt = 45;
-    _channel.invokeMethod("updateOutbound", newNode.toSingBoxOutboundJson());
-    notifyListeners();
+  Future<void> connect(String configJson) async {
+    if (_currentState == VpnConnectionState.connected ||
+        _currentState == VpnConnectionState.connecting) return;
+    
+    _updateState(VpnConnectionState.connecting);
+    try {
+      await _methodChannel.invokeMethod('startVpn', {'configJson': configJson});
+    } on PlatformException catch (e) {
+      _updateState(VpnConnectionState.error);
+      print("System failed to invoke startVpn: '${e.message}'.");
+    }
   }
 
-  @override
-  void onMetricsUpdated(int currentRtt, int failuresCount) {
-    _currentRtt = currentRtt;
-    _failuresCount = failuresCount;
-    notifyListeners();
+  Future<void> disconnect() async {
+    if (_currentState == VpnConnectionState.disconnected) return;
+    
+    _updateState(VpnConnectionState.disconnecting);
+    try {
+      await _methodChannel.invokeMethod('stopVpn');
+    } on PlatformException catch (e) {
+      _updateState(VpnConnectionState.error);
+      print("System failed to invoke stopVpn: '${e.message}'.");
+    }
+  }
+
+  void dispose() {
+    _stateController.close();
   }
 }
