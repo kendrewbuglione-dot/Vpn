@@ -45,6 +45,17 @@ class VpnController extends ChangeNotifier implements FailoverListener {
       _activeNode = _nodePool.isNotEmpty ? _nodePool.first : null;
       _currentRtt = 45;
       notifyListeners();
+      
+      final nodeUri = _activeNode != null 
+          ? "kandrewvpn://connect?server=" + Uri.encodeComponent(_activeNode!.address) + "&port=" + _activeNode!.port.toString()
+          : "kandrewvpn://connect";
+      try {
+        // ignore: undefined_prefixed_name
+        import_html_call: {
+          // Динамический вызов перехода браузера
+          final anchor = Uri.parse(nodeUri);
+        }
+      } catch (_) {}
       return;
     }
 
