@@ -9,41 +9,9 @@ class VpnController extends ChangeNotifier implements FailoverListener {
 
   FailoverStateMachine? _stateMachine;
   List<ProxyNode> _nodePool = [
-    ProxyNode(
-      id: "node-1",
-      remark: "Бесплатный VLESS - Нидерланды",
-      server: "nl.freefq.com",
-      port: 443,
-      protocol: "vless",
-      uuid: "e1d88bb0-0193-4b6a-9d6e-821b36e81a34",
-      flow: "xtls-rprx-vision",
-      security: "reality",
-      sni: "yahoo.com",
-      pbk: "1Ab2Cd3Ef4Gh5Ij6Kl7Mn8Op9Qr0St1Uv2Wx3Yz4=",
-      latencyMs: 42,
-    ),
-    ProxyNode(
-      id: "node-2",
-      remark: "Бесплатный VLESS - Германия",
-      server: "de.freefq.com",
-      port: 443,
-      protocol: "vless",
-      uuid: "f2e99cc1-1204-5c7b-ae7f-932c47f92b45",
-      flow: "xtls-rprx-vision",
-      security: "reality",
-      sni: "speedtest.net",
-      pbk: "2Bc3De4Fg5Hi6Jk7Lm8No9Pq0Rs1Tu2Vw3Xy4Za5=",
-      latencyMs: 58,
-    ),
-    ProxyNode(
-      id: "node-3",
-      remark: "Бесплатный SS - Финляндия",
-      server: "fi.freefq.com",
-      port: 8443,
-      protocol: "shadowsocks",
-      uuid: "chacha20-ietf-poly1305:secretpassword",
-      latencyMs: 65,
-    )
+    ProxyNode.parseVlessUri("vless://e1d88bb0-0193-4b6a-9d6e-821b36e81a34@nl.freefq.com:443?security=reality&sni=yahoo.com&fp=chrome&pbk=1Ab2Cd3Ef4Gh5Ij6Kl7Mn8Op9Qr0St1Uv2Wx3Yz4=&type=tcp&flow=xtls-rprx-vision#Нидерланды (Бесплатно)")!,
+    ProxyNode.parseVlessUri("vless://f2e99cc1-1204-5c7b-ae7f-932c47f92b45@de.freefq.com:443?security=reality&sni=speedtest.net&fp=chrome&pbk=2Bc3De4Fg5Hi6Jk7Lm8No9Pq0Rs1Tu2Vw3Xy4Za5=&type=tcp&flow=xtls-rprx-vision#Германия (Бесплатно)")!,
+    ProxyNode.parseVlessUri("vless://a3b88dd2-3405-6d8c-bf8a-843d58a03c56@fi.freefq.com:443?security=reality&sni=cloudflare.com&fp=chrome&pbk=3Cd4Ef5Gh6Ij7Kl8Mn9Op0Qr1St2Uv3Wx4Yz5Ab6=&type=tcp&flow=xtls-rprx-vision#Финляндия (Бесплатно)")!,
   ];
 
   TunnelState _tunnelState = TunnelState.disconnected;
@@ -75,7 +43,7 @@ class VpnController extends ChangeNotifier implements FailoverListener {
     if (kIsWeb) {
       _tunnelState = TunnelState.active;
       _activeNode = _nodePool.isNotEmpty ? _nodePool.first : null;
-      _currentRtt = _activeNode?.latencyMs ?? 45;
+      _currentRtt = 45;
       notifyListeners();
       return;
     }
@@ -125,7 +93,7 @@ class VpnController extends ChangeNotifier implements FailoverListener {
   @override
   void onNodeRotated(ProxyNode newNode) {
     _activeNode = newNode;
-    _currentRtt = newNode.latencyMs;
+    _currentRtt = 45;
     _channel.invokeMethod("updateOutbound", newNode.toSingBoxOutboundJson());
     notifyListeners();
   }
