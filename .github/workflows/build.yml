@@ -52,6 +52,7 @@ jobs:
 
           flutter analyze --no-fatal-warnings --no-fatal-infos || true
           flutter test || true
+          sed -i "s/ package=\"[^\"]*\"//g" android/app/src/main/AndroidManifest.xml
           flutter build apk --release
 
       - name: Выгрузка APK в артефакты
