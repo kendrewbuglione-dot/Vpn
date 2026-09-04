@@ -44,6 +44,7 @@ jobs:
       - name: Сборка релизного APK
         run: |
           flutter create . --project-name vpn --platforms=android --org com.kandrew.vpn || true
+          sed -i "s/package=\"com.example.vpn\"//g" android/app/src/main/AndroidManifest.xml 2>/dev/null || true
           bash patch_manifest.sh || true
           sed -i 's/minSdkVersion .*/minSdkVersion 21/g' android/app/build.gradle || true
           flutter pub get
