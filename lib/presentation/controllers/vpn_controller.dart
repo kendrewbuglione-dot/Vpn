@@ -1,6 +1,8 @@
+// ignore: avoid_web_libraries_in_flutter
+import "dart:html" as html;
 import "package:flutter/foundation.dart";
 import "package:http/http.dart" as http;
-import "package:url_launcher/url_launcher.dart";
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/proxy_node.dart';
@@ -60,10 +62,10 @@ class VpnController extends ChangeNotifier implements FailoverListener {
       final node = _activeNode ?? (_nodePool.isNotEmpty ? _nodePool.first : null);
       final rawUri = node != null ? "v2ray://install?url=https://raw.githubusercontent.com/freefq/free/master/v2" : "v2ray://";
       final uri = Uri.parse(rawUri);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(Uri.parse("https://github.com/kendrewbuglione-dot/Vpn/releases"), mode: LaunchMode.externalApplication);
+      try {
+        html.window.location.href = rawUri;
+      } catch (e) {
+        html.window.open("https://github.com/kendrewbuglione-dot/Vpn/releases", "_blank");
       }
       return;
     }
