@@ -1,3 +1,6 @@
+import "package:flutter/foundation.dart";
+import "package:http/http.dart" as http;
+import "package:url_launcher/url_launcher.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/proxy_node.dart';
@@ -8,6 +11,22 @@ class VpnController extends ChangeNotifier implements FailoverListener {
 
   FailoverStateMachine? _stateMachine;
   List<ProxyNode> _nodePool = [];
+
+  VpnController() {
+    fetchDefaultServers();
+  }
+
+  Future<void> fetchDefaultServers() async {
+    try {
+      final res = await http.get(Uri.parse("https://raw.githubusercontent.com/freefq/free/master/v2"));
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        loadSubscription(res.body.trim());
+      }
+    } catch (e) {
+      debugPrint("Auto-load nodes error: $e");
+    }
+  }
+
 
   TunnelState _tunnelState = TunnelState.disconnected;
   ProxyNode? _activeNode;
@@ -35,6 +54,21 @@ class VpnController extends ChangeNotifier implements FailoverListener {
   }
 
   Future<void> _connect() async {
+    if (kIsWeb) {
+
+    if (kIsWeb) {
+      final node = _activeNode ?? (_nodePool.isNotEmpty ? _nodePool.first : null);
+      final rawUri = node != null ? "v2ray://install?url=https://raw.githubusercontent.com/freefq/free/master/v2" : "v2ray://";
+      final uri = Uri.parse(rawUri);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(Uri.parse("https://github.com/kendrewbuglione-dot/Vpn/releases"), mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
+    }
     if (_nodePool.isEmpty) return;
 
     try {
