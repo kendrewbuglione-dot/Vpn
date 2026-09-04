@@ -155,7 +155,7 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
             const Spacer(flex: 2),
             Center(
               child: GestureDetector(
-                onTap: c.nodePool.isEmpty ? null : () => c.toggleConnection(),
+                onTap: () => c.toggleConnection(),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 350),
                   curve: Curves.easeInOut,

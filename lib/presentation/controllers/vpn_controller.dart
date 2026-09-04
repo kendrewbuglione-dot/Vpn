@@ -48,7 +48,7 @@ class VpnController extends ChangeNotifier implements FailoverListener {
       return;
     }
 
-    if (_nodePool.isEmpty) return;
+    // if (_nodePool.isEmpty) return; -- bypassed for direct vpn start
 
     try {
       final bool started = await _channel.invokeMethod("startVpn") ?? false;
