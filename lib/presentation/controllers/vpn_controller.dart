@@ -56,7 +56,7 @@ class VpnController extends ChangeNotifier implements FailoverListener {
           final anchor = Uri.parse(nodeUri);
         }
       } catch (_) {}
-      return;
+          }
     }
 
     if (_nodePool.isEmpty) return;
