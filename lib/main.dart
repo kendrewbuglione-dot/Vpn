@@ -39,6 +39,7 @@ class _VpnHomePageState extends State<VpnHomePage> {
   @override
   void initState() {
     super.initState();
+    _vpnController.initialize();
     _vpnController.connectionStateStream.listen((state) {
       setState(() {
         _state = state;
@@ -49,6 +50,7 @@ class _VpnHomePageState extends State<VpnHomePage> {
   @override
   void dispose() {
     _configController.dispose();
+    _vpnController.dispose();
     super.dispose();
   }
 
