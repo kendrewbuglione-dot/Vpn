@@ -1,52 +1,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.vpn_aggregator">
+    package="com.vpn">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="VPN"
-        android:name="${applicationName}"
+        android:label="VPN Aggregator"
         android:icon="@mipmap/ic_launcher">
-
-        <service
-            android:name=".service.CustomVpnService"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="specialUse"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Routing and tunneling user traffic through local userspace network core." />
-        </service>
-
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/LaunchTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="kandrewvpn" android:host="connect" />
-            </intent-filter>
-
         </activity>
+
+        <service
+            android:name=".orchestrator.VpnOrchestratorService"
+            android:exported="false" />
     </application>
 </manifest>
