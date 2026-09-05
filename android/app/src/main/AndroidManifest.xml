@@ -21,5 +21,10 @@
         <service
             android:name=".orchestrator.VpnOrchestratorService"
             android:exported="false" />
+
+        <!-- Обязательный тег для новых версий Flutter -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
     </application>
 </manifest>
