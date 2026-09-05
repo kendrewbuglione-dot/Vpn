@@ -26,8 +26,9 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Generate Fresh Android Scaffold
-        run: flutter create . --platforms=android --org com.vpn
+      - name: Generate Fresh Android Scaffold (v2 Embedding)
+        run: |
+          flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
 
       - name: Build Release APK
         run: flutter build apk --release --no-pub
