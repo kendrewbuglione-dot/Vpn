@@ -3,10 +3,28 @@ import 'dart:async';
 
 enum VpnConnectionState { disconnected, connecting, connected, disconnecting, error }
 
+enum SecurityType { reality, standard, none }
+
 class VpnNode {
   final String id;
   final String name;
-  VpnNode({required this.id, required this.name});
+  final String address;
+  final int port;
+  final String transport;
+  final String remark;
+  final SecurityType security;
+  final int latencyMs;
+
+  VpnNode({
+    required this.id,
+    required this.name,
+    this.address = '127.0.0.1',
+    this.port = 443,
+    this.transport = 'tcp',
+    this.remark = '',
+    this.security = SecurityType.none,
+    this.latencyMs = 45,
+  });
 }
 
 class VpnController {
@@ -26,13 +44,12 @@ class VpnController {
   VpnConnectionState _currentState = VpnConnectionState.disconnected;
   VpnConnectionState get currentState => _currentState;
 
-  // Геттеры и поля для UI
-  VpnNode? _activeNode = VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)');
+  VpnNode? _activeNode = VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)', remark: 'Основной');
   VpnNode? get activeNode => _activeNode;
 
   List<VpnNode> _nodePool = [
-    VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)'),
-    VpnNode(id: '2', name: 'Сервер резервный')
+    VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)', remark: 'Основной', latencyMs: 35),
+    VpnNode(id: '2', name: 'Сервер резервный', remark: 'Запасной', latencyMs: 70)
   ];
   List<VpnNode> get nodePool => _nodePool;
 
@@ -72,7 +89,6 @@ class VpnController {
     _stateController.sink.add(state);
   }
 
-  // Метод переключения, который ждет UI
   Future<void> toggleConnection() async {
     if (_currentState == VpnConnectionState.connected) {
       await disconnect();
@@ -81,9 +97,7 @@ class VpnController {
     }
   }
 
-  Future<void> loadSubscription(String url) async {
-    // Заглушка для загрузки подписки
-  }
+  Future<void> loadSubscription(String url) async {}
 
   Future<void> connect(String configJson) async {
     if (_currentState == VpnConnectionState.connected ||
