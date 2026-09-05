@@ -24,7 +24,6 @@ class VpnController {
     _eventChannel.receiveBroadcastStream().listen(
       _onNativeEventReceived,
       onError: (error) {
-        print("Platform channel error: $error");
         _updateState(VpnConnectionState.error);
       },
     );
@@ -63,7 +62,6 @@ class VpnController {
       await _methodChannel.invokeMethod('startVpn', {'configJson': configJson});
     } on PlatformException catch (e) {
       _updateState(VpnConnectionState.error);
-      print("System failed to invoke startVpn: '${e.message}'.");
     }
   }
 
@@ -75,7 +73,6 @@ class VpnController {
       await _methodChannel.invokeMethod('stopVpn');
     } on PlatformException catch (e) {
       _updateState(VpnConnectionState.error);
-      print("System failed to invoke stopVpn: '${e.message}'.");
     }
   }
 
