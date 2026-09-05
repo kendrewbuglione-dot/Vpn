@@ -24,7 +24,13 @@ jobs:
         with:
           flutter-version: '3.19.x'
           channel: 'stable'
-          cache: true
+          cache: false
+
+      - name: Generate Android Scaffold if missing
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
+          fi
 
       - name: Get Dependencies
         run: flutter pub get
