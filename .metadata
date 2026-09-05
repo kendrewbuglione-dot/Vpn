@@ -1,0 +1,6 @@
+version: 1.0.0
+project_type: app
+
+platforms:
+  android:
+    default: true
