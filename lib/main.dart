@@ -31,6 +31,10 @@ class VpnHomePage extends StatefulWidget {
 class _VpnHomePageState extends State<VpnHomePage> {
   final VpnController _vpnController = VpnController();
   VpnConnectionState _state = VpnConnectionState.disconnected;
+  
+  final TextEditingController _configController = TextEditingController(
+    text: '{\n  "log": { "level": "info" },\n  "inbounds": [{\n    "type": "tun",\n    "tag": "tun-in",\n    "inet4_address": "172.19.0.1/30",\n    "auto_route": true\n  }]\n}'
+  );
 
   @override
   void initState() {
@@ -43,6 +47,12 @@ class _VpnHomePageState extends State<VpnHomePage> {
   }
 
   @override
+  void dispose() {
+    _configController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     bool isConnected = _state == VpnConnectionState.connected;
     bool isConnecting = _state == VpnConnectionState.connecting;
@@ -51,9 +61,9 @@ class _VpnHomePageState extends State<VpnHomePage> {
       appBar: AppBar(
         title: const Text('VPN Aggregator (Sing-box)'),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               'Статус: ${_state.name.toUpperCase()}',
@@ -63,29 +73,46 @@ class _VpnHomePageState extends State<VpnHomePage> {
                 color: isConnected ? Colors.green : Colors.grey,
               ),
             ),
-            const SizedBox(height: 40),
-            ElevatedButton.styleFrom(
-              backgroundColor: isConnected ? Colors.red : Colors.blue,
-            ).let((_) => ElevatedButton(
-              onPressed: isConnecting
-                  ? null
-                  : () {
-                      if (isConnected) {
-                        _vpnController.disconnect();
-                      } else {
-                        // Передаем базовый тестовый JSON конфигурации
-                        _vpnController.connect('{"test": "config"}');
-                      }
-                    },
-              child: Text(isConnected ? 'Отключить VPN' : 'Подключить VPN'),
-            )),
+            const SizedBox(height: 20),
+            Expanded(
+              child: TextField(
+                controller: _configController,
+                maxLines: null,
+                expands: true,
+                decoration: const InputDecoration(
+                  labelText: 'Конфигурация Sing-box / VLESS (JSON)',
+                  border: OutlineInputBorder(),
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isConnected ? Colors.red : Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: isConnecting
+                    ? null
+                    : () {
+                        if (isConnected) {
+                          _vpnController.disconnect();
+                        } else {
+                          _vpnController.connect(_configController.text);
+                        }
+                      },
+                child: Text(
+                  isConnected ? 'Отключить VPN' : 'Подключить VPN',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-}
-
-extension on ButtonStyle {
-  Widget let(Widget Function(ButtonStyle style) builder) => builder(this);
 }
