@@ -24,11 +24,10 @@ jobs:
         with:
           flutter-version: '3.19.x'
           channel: 'stable'
-          cache: false
+          cache: true
 
-      - name: Generate Fresh Android Scaffold (v2 Embedding)
-        run: |
-          flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
+      - name: Get Dependencies
+        run: flutter pub get
 
       - name: Build Release APK
         run: flutter build apk --release --no-pub
