@@ -26,7 +26,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Clean Gradle and Build APK
+      - name: Clean and Build Release APK
         run: |
           flutter clean
           flutter pub get
