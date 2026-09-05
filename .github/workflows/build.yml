@@ -24,13 +24,13 @@ jobs:
         with:
           flutter-version: '3.19.x'
           channel: 'stable'
-          cache: true
+          cache: false
 
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build Release APK
-        run: flutter build apk --release --no-pub
+      - name: Clean Gradle and Build APK
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build apk --release --no-pub
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
