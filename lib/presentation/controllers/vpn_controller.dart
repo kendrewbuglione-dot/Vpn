@@ -1,9 +1,10 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 enum VpnConnectionState { disconnected, connecting, connected, disconnecting, error }
 
-enum SecurityType { reality, standard, none }
+enum TunnelState { active, inactive, connecting }
 
 class VpnNode {
   final String id;
@@ -12,7 +13,6 @@ class VpnNode {
   final int port;
   final String transport;
   final String remark;
-  final SecurityType security;
   final int latencyMs;
 
   VpnNode({
@@ -22,12 +22,11 @@ class VpnNode {
     this.port = 443,
     this.transport = 'tcp',
     this.remark = '',
-    this.security = SecurityType.none,
     this.latencyMs = 45,
   });
 }
 
-class VpnController {
+class VpnController extends ChangeNotifier {
   static final VpnController instance = VpnController._internal();
   factory VpnController() => instance;
   VpnController._internal();
@@ -44,16 +43,32 @@ class VpnController {
   VpnConnectionState _currentState = VpnConnectionState.disconnected;
   VpnConnectionState get currentState => _currentState;
 
-  VpnNode? _activeNode = VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)', remark: 'Основной');
+  // Дополнительные поля, которые ждет minimal_home_screen
+  int _failuresCount = 0;
+  int get failuresCount => _failuresCount;
+
+  TunnelState get tunnelState {
+    switch (_currentState) {
+      case VpnConnectionState.connected:
+        return TunnelState.active;
+      case VpnConnectionState.connecting:
+      case VpnConnectionState.disconnecting:
+        return TunnelState.connecting;
+      default:
+        return TunnelState.inactive;
+    }
+  }
+
+  final VpnNode? _activeNode = VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)', remark: 'Основной');
   VpnNode? get activeNode => _activeNode;
 
-  List<VpnNode> _nodePool = [
+  final List<VpnNode> _nodePool = [
     VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)', remark: 'Основной', latencyMs: 35),
     VpnNode(id: '2', name: 'Сервер резервный', remark: 'Запасной', latencyMs: 70)
   ];
   List<VpnNode> get nodePool => _nodePool;
 
-  int _currentRtt = 45;
+  final int _currentRtt = 45;
   int get currentRtt => _currentRtt;
 
   void initialize() {
@@ -87,6 +102,7 @@ class VpnController {
     if (_currentState == state) return;
     _currentState = state;
     _stateController.sink.add(state);
+    notifyListeners();
   }
 
   Future<void> toggleConnection() async {
@@ -106,7 +122,8 @@ class VpnController {
     _updateState(VpnConnectionState.connecting);
     try {
       await _methodChannel.invokeMethod('startVpn', {'configJson': configJson});
-    } on PlatformException catch (e) {
+    } on PlatformException {
+      _failuresCount++;
       _updateState(VpnConnectionState.error);
     }
   }
@@ -117,12 +134,14 @@ class VpnController {
     _updateState(VpnConnectionState.disconnecting);
     try {
       await _methodChannel.invokeMethod('stopVpn');
-    } on PlatformException catch (e) {
+    } on PlatformException {
       _updateState(VpnConnectionState.error);
     }
   }
 
+  @override
   void dispose() {
     _stateController.close();
+    super.dispose();
   }
 }
