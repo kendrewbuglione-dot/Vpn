@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Clean and get dependencies
+      - name: Clean Build Workspace
         run: |
           flutter clean
           flutter pub get
