@@ -1,15 +1,15 @@
 name: vpn_aggregator
-description: Mobile VPN client based on sing-box and Flutter.
+description: A high-performance native VPN aggregator based on Sing-box and Flutter.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
