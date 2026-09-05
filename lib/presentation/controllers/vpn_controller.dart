@@ -3,6 +3,12 @@ import 'dart:async';
 
 enum VpnConnectionState { disconnected, connecting, connected, disconnecting, error }
 
+class VpnNode {
+  final String id;
+  final String name;
+  VpnNode({required this.id, required this.name});
+}
+
 class VpnController {
   static final VpnController instance = VpnController._internal();
   factory VpnController() => instance;
@@ -19,6 +25,19 @@ class VpnController {
   Stream<VpnConnectionState> get connectionStateStream => _stateController.stream;
   VpnConnectionState _currentState = VpnConnectionState.disconnected;
   VpnConnectionState get currentState => _currentState;
+
+  // Геттеры и поля для UI
+  VpnNode? _activeNode = VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)');
+  VpnNode? get activeNode => _activeNode;
+
+  List<VpnNode> _nodePool = [
+    VpnNode(id: '1', name: 'Автовыбор (Быстрый сервер)'),
+    VpnNode(id: '2', name: 'Сервер резервный')
+  ];
+  List<VpnNode> get nodePool => _nodePool;
+
+  int _currentRtt = 45;
+  int get currentRtt => _currentRtt;
 
   void initialize() {
     _eventChannel.receiveBroadcastStream().listen(
@@ -51,6 +70,19 @@ class VpnController {
     if (_currentState == state) return;
     _currentState = state;
     _stateController.sink.add(state);
+  }
+
+  // Метод переключения, который ждет UI
+  Future<void> toggleConnection() async {
+    if (_currentState == VpnConnectionState.connected) {
+      await disconnect();
+    } else {
+      await connect('{}');
+    }
+  }
+
+  Future<void> loadSubscription(String url) async {
+    // Заглушка для загрузки подписки
   }
 
   Future<void> connect(String configJson) async {
