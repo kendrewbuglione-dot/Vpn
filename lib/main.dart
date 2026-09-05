@@ -1,69 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'vpn_controller.dart';
 
 void main() {
-  runApp(const VpnApp());
+  runApp(const MyApp());
 }
 
-class VpnApp extends StatelessWidget {
-  const VpnApp({Key? key}) : super(key: key);
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const VpnControlScreen(),
+      title: 'VPN Aggregator',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const VpnHomePage(),
     );
   }
 }
 
-class VpnControlScreen extends StatefulWidget {
-  const VpnControlScreen({Key? key}) : super(key: key);
+class VpnHomePage extends StatefulWidget {
+  const VpnHomePage({super.key});
 
   @override
-  State<VpnControlScreen> createState() => _VpnControlScreenState();
+  State<VpnHomePage> createState() => _VpnHomePageState();
 }
 
-class _VpnControlScreenState extends State<VpnControlScreen> {
-  static const platform = MethodChannel('com.vpn.orchestrator/control');
-  String _status = 'VPN Disconnected';
+class _VpnHomePageState extends State<VpnHomePage> {
+  final VpnController _vpnController = VpnController();
+  VpnConnectionState _state = VpnConnectionState.disconnected;
 
-  Future<void> _manageVpn(String command) async {
-    try {
-      final String result = await platform.invokeMethod(command);
+  @override
+  void initState() {
+    super.initState();
+    _vpnController.connectionStateStream.listen((state) {
       setState(() {
-        _status = result;
+        _state = state;
       });
-    } on PlatformException catch (e) {
-      setState(() {
-        _status = "Error: '${e.message}'.";
-      });
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isConnected = _state == VpnConnectionState.connected;
+    bool isConnecting = _state == VpnConnectionState.connecting;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('VPN Orchestrator')),
+      appBar: AppBar(
+        title: const Text('VPN Aggregator (Sing-box)'),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Status: $_status', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () => _manageVpn('startVpnService'),
-              child: const Text('Start VPN Service'),
+            Text(
+              'Статус: ${_state.name.toUpperCase()}',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isConnected ? Colors.green : Colors.grey,
+              ),
             ),
-            const SizedBox(height: 15),
-            ElevatedButton(
-              onPressed: () => _manageVpn('stopVpnService'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: const Text('Stop VPN Service'),
-            ),
+            const SizedBox(height: 40),
+            ElevatedButton.styleFrom(
+              backgroundColor: isConnected ? Colors.red : Colors.blue,
+            ).let((_) => ElevatedButton(
+              onPressed: isConnecting
+                  ? null
+                  : () {
+                      if (isConnected) {
+                        _vpnController.disconnect();
+                      } else {
+                        // Передаем базовый тестовый JSON конфигурации
+                        _vpnController.connect('{"test": "config"}');
+                      }
+                    },
+              child: Text(isConnected ? 'Отключить VPN' : 'Подключить VPN'),
+            )),
           ],
         ),
       ),
     );
   }
+}
+
+extension on ButtonStyle {
+  Widget let(Widget Function(ButtonStyle style) builder) => builder(this);
 }
