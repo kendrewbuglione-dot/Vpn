@@ -26,14 +26,9 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Generate Android Scaffold if missing
+      - name: Generate Fresh Android Scaffold (v2 Embedding)
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
-          fi
-
-      - name: Get Dependencies
-        run: flutter pub get
+          flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
 
       - name: Build Release APK
         run: flutter build apk --release --no-pub
