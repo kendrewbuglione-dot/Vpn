@@ -1,36 +1,40 @@
-name: Build VpnAggregator APK
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Java
+
+      - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
-      - name: Setup Flutter
+
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.19.x'
           channel: 'stable'
-          
-      - name: Install Dependencies
+          cache: true
+
+      - name: Install dependencies
         run: flutter pub get
-        
+
       - name: Build Release APK
         run: flutter build apk --release
-        
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vpn-release-apk
+          name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
