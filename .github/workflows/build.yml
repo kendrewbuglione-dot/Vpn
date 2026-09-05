@@ -26,6 +26,19 @@ jobs:
           channel: 'stable'
           cache: false
 
+      - name: Generate Clean Android Scaffold
+        run: |
+          rm -rf android ios windows macos linux web
+          flutter create . --platforms=android --org com.vpn --project-name vpn_aggregator
+
+      - name: Force Compatible Gradle Wrapper
+        run: |
+          cd android
+          ./gradlew wrapper --gradle-version 8.5 --distribution-type bin
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get
+
       - name: Build Release APK
         run: flutter build apk --release --no-pub
 
