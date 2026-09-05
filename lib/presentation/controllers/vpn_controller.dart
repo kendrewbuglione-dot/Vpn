@@ -4,9 +4,9 @@ import 'dart:async';
 
 enum VpnConnectionState { disconnected, connecting, connected, disconnecting, error }
 
-enum VpnTunnelState { active, inactive, connecting }
+enum TunnelState { active, inactive, connecting }
 
-enum VpnSecurityType { reality, standard, none }
+enum SecurityType { reality, standard, none }
 
 class VpnNode {
   final String id;
@@ -15,7 +15,7 @@ class VpnNode {
   final int port;
   final String transport;
   final String remark;
-  final VpnSecurityType security;
+  final SecurityType security;
   final int latencyMs;
 
   VpnNode({
@@ -25,7 +25,7 @@ class VpnNode {
     this.port = 443,
     this.transport = 'tcp',
     this.remark = '',
-    this.security = VpnSecurityType.none,
+    this.security = SecurityType.none,
     this.latencyMs = 45,
   });
 }
@@ -50,15 +50,15 @@ class VpnController extends ChangeNotifier {
   int _failuresCount = 0;
   int get failuresCount => _failuresCount;
 
-  VpnTunnelState get tunnelState {
+  TunnelState get tunnelState {
     switch (_currentState) {
       case VpnConnectionState.connected:
-        return VpnTunnelState.active;
+        return TunnelState.active;
       case VpnConnectionState.connecting:
       case VpnConnectionState.disconnecting:
-        return VpnTunnelState.connecting;
+        return TunnelState.connecting;
       default:
-        return VpnTunnelState.inactive;
+        return TunnelState.inactive;
     }
   }
 
