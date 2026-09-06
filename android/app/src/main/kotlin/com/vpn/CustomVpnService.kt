@@ -1,67 +1,231 @@
 package com.vpn
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
+import android.os.Build
+import android.os.IBinder
 import android.os.ParcelFileDescriptor
 
 class CustomVpnService : VpnService() {
+
     companion object {
         const val ACTION_START = "com.vpn.START"
         const val ACTION_STOP = "com.vpn.STOP"
         const val EXTRA_CONFIG = "VPN_CONFIG"
-        @Volatile var currentState = VpnState.DISCONNECTED
+
+        private const val NOTIFICATION_CHANNEL_ID =
+            "vpn_service_channel"
+
+        private const val NOTIFICATION_ID = 1001
+
+        @Volatile
+        var currentState = VpnState.DISCONNECTED
+            private set
     }
 
     private var tunInterface: ParcelFileDescriptor? = null
     private var vpnConfig: String? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int
+    ): Int {
+
         when (intent?.action) {
+
             ACTION_START -> {
-                vpnConfig = intent.getStringExtra(EXTRA_CONFIG)
+                vpnConfig =
+                    intent.getStringExtra(EXTRA_CONFIG)
+
                 startVpn()
             }
-            ACTION_STOP -> stopVpn()
+
+            ACTION_STOP -> {
+                stopVpn()
+            }
         }
+
         return Service.START_STICKY
     }
 
     private fun startVpn() {
-        if (currentState == VpnState.CONNECTED || currentState == VpnState.CONNECTING) return
+
+        if (
+            currentState == VpnState.CONNECTED ||
+            currentState == VpnState.CONNECTING
+        ) {
+            return
+        }
+
         currentState = VpnState.CONNECTING
+
         try {
+
+            startAsForegroundService()
             startVpnInterface()
+
+            /*
+             * Пока здесь только TUN.
+             *
+             * На следующем этапе:
+             *
+             * SingBoxManager.start(
+             *     config = vpnConfig,
+             *     tunFd = tunInterface!!.fd
+             * )
+             */
+
             currentState = VpnState.CONNECTED
+
         } catch (e: Exception) {
+
+            e.printStackTrace()
+
             currentState = VpnState.ERROR
+
             stopVpn()
         }
     }
 
+    private fun startAsForegroundService() {
+
+        createNotificationChannel()
+
+        val notification =
+            Notification.Builder(
+                this,
+                NOTIFICATION_CHANNEL_ID
+            )
+                .setContentTitle("VPN is active")
+                .setContentText("Native VPN tunnel is running")
+                .setSmallIcon(
+                    android.R.drawable.stat_sys_warning
+                )
+                .setOngoing(true)
+                .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+
+        } else {
+
+            startForeground(
+                NOTIFICATION_ID,
+                notification
+            )
+        }
+    }
+
+    private fun createNotificationChannel() {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return
+        }
+
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            "VPN Service",
+            NotificationManager.IMPORTANCE_LOW
+        )
+
+        channel.description =
+            "Foreground notification for VPN service"
+
+        val manager =
+            getSystemService(
+                NotificationManager::class.java
+            )
+
+        manager.createNotificationChannel(channel)
+    }
+
     private fun startVpnInterface() {
-        val builder = VpnService.Builder()
-        builder.setSession("Native VPN").setMtu(1500)
-        builder.addAddress("10.0.0.2", 32)
-        builder.addRoute("0.0.0.0", 0)
-        builder.addDnsServer("1.1.1.1")
-        
-        tunInterface = builder.establish()
-        if (tunInterface == null) throw IllegalStateException("Failed to establish VPN interface")
+
+        val builder = Builder()
+
+        builder
+            .setSession("Native VPN")
+            .setMtu(1500)
+
+        builder.addAddress(
+            "10.0.0.2",
+            32
+        )
+
+        builder.addRoute(
+            "0.0.0.0",
+            0
+        )
+
+        builder.addDnsServer(
+            "1.1.1.1"
+        )
+
+        tunInterface =
+            builder.establish()
+
+        if (tunInterface == null) {
+
+            throw IllegalStateException(
+                "Failed to establish VPN interface"
+            )
+        }
     }
 
     private fun stopVpn() {
-        currentState = VpnState.DISCONNECTING
+
+        currentState =
+            VpnState.DISCONNECTING
+
         try {
+
+            /*
+             * На следующем этапе:
+             *
+             * SingBoxManager.stop()
+             */
+
             tunInterface?.close()
+
         } catch (e: Exception) {
+
             e.printStackTrace()
+
         } finally {
+
             tunInterface = null
-            currentState = VpnState.DISCONNECTED
-            stopForeground(true)
+            vpnConfig = null
+
+            currentState =
+                VpnState.DISCONNECTED
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(
+                    STOP_FOREGROUND_REMOVE
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+
             stopSelf()
         }
+    }
+
+    override fun onRevoke() {
+        stopVpn()
+        super.onRevoke()
     }
 
     override fun onDestroy() {
@@ -69,8 +233,9 @@ class CustomVpnService : VpnService() {
         super.onDestroy()
     }
 
-    override fun onRevoke() {
-        stopVpn()
-        super.onRevoke()
+    override fun onBind(
+        intent: Intent?
+    ): IBinder? {
+        return super.onBind(intent)
     }
 }
