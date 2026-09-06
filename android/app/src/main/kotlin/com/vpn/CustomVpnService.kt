@@ -1,5 +1,6 @@
 package com.vpn
 
+import android.app.Service
 import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
@@ -23,7 +24,7 @@ class CustomVpnService : VpnService() {
             }
             ACTION_STOP -> stopVpn()
         }
-        return START_STICKY
+        return Service.START_STICKY
     }
 
     private fun startVpn() {
@@ -39,7 +40,7 @@ class CustomVpnService : VpnService() {
     }
 
     private fun startVpnInterface() {
-        val builder = Builder()
+        val builder = VpnService.Builder()
         builder.setSession("Native VPN").setMtu(1500)
         builder.addAddress("10.0.0.2", 32)
         builder.addRoute("0.0.0.0", 0)
@@ -58,7 +59,7 @@ class CustomVpnService : VpnService() {
         } finally {
             tunInterface = null
             currentState = VpnState.DISCONNECTED
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopForeground(true)
             stopSelf()
         }
     }
