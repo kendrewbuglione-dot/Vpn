@@ -38,6 +38,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Flutter tests
+        if: ${{ hashFiles('test/**') != '' }}
         run: flutter test
 
       - name: Build Debug APK
