@@ -1,119 +1,54 @@
 import 'package:flutter/material.dart';
-import 'vpn_controller.dart';
+
+import 'presentation/controllers/vpn_controller.dart';
+import 'presentation/screens/minimal_home_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const VpnApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class VpnApp extends StatefulWidget {
+  const VpnApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VPN Aggregator',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const VpnHomePage(),
-    );
-  }
+  State<VpnApp> createState() => _VpnAppState();
 }
 
-class VpnHomePage extends StatefulWidget {
-  const VpnHomePage({super.key});
-
-  @override
-  State<VpnHomePage> createState() => _VpnHomePageState();
-}
-
-class _VpnHomePageState extends State<VpnHomePage> {
-  final VpnController _vpnController = VpnController();
-  VpnConnectionState _state = VpnConnectionState.disconnected;
-  
-  final TextEditingController _configController = TextEditingController(
-    text: '{\n  "log": { "level": "info" },\n  "inbounds": [{\n    "type": "tun",\n    "tag": "tun-in",\n    "inet4_address": "172.19.0.1/30",\n    "auto_route": true\n  }]\n}'
-  );
+class _VpnAppState extends State<VpnApp> {
+  final VpnController _controller = VpnController();
 
   @override
   void initState() {
     super.initState();
-    _vpnController.initialize();
-    _vpnController.connectionStateStream.listen((state) {
-      setState(() {
-        _state = state;
-      });
-    });
+    _initialize();
   }
 
-  @override
-  void dispose() {
-    _configController.dispose();
-    _vpnController.dispose();
-    super.dispose();
+  Future<void> _initialize() async {
+    try {
+      await _controller.initialize();
+    } catch (_) {
+      // Native VPN bridge may be unavailable during early startup.
+      // The controller will expose the error state if needed.
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isConnected = _state == VpnConnectionState.connected;
-    bool isConnecting = _state == VpnConnectionState.connecting;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('VPN Aggregator (Sing-box)'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'Статус: ${_state.name.toUpperCase()}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isConnected ? Colors.green : Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: TextField(
-                controller: _configController,
-                maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  labelText: 'Конфигурация Sing-box / VLESS (JSON)',
-                  border: OutlineInputBorder(),
-                ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isConnected ? Colors.red : Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: isConnecting
-                    ? null
-                    : () {
-                        if (isConnected) {
-                          _vpnController.disconnect();
-                        } else {
-                          _vpnController.connect(_configController.text);
-                        }
-                      },
-                child: Text(
-                  isConnected ? 'Отключить VPN' : 'Подключить VPN',
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ),
-            ),
-          ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'VPN Aggregator',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF0B0F19),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF10B981),
+          surface: Color(0xFF0B0F19),
         ),
+      ),
+      home: MinimalHomeScreen(
+        controller: _controller,
       ),
     );
   }
