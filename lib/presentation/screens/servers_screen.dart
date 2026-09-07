@@ -104,6 +104,10 @@ class _ServersScreenState extends State<ServersScreen> {
                     ),
                   ),
                   child: ListTile(
+                    onTap: () {
+                      widget.controller.selectNode(node);
+                      setState(() {});
+                    },
                     leading: Icon(
                       node.security == SecurityType.reality ? Icons.shield_rounded : Icons.lock_outline,
                       color: node.security == SecurityType.reality ? const Color(0xFF10B981) : Colors.grey,
