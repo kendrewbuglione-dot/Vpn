@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/state/failover_state_machine.dart';
 import '../controllers/vpn_controller.dart';
 import 'servers_screen.dart';
+import 'installed_vpn_apps_screen.dart';
 
 class MinimalHomeScreen extends StatefulWidget {
   final VpnController controller;
@@ -172,21 +173,40 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
                       letterSpacing: 1,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.add_link_rounded,
-                      color: Colors.white70,
-                    ),
-                    tooltip: 'Подписки',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ServersScreen(
-                            controller: controller,
-                          ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.apps_rounded,
+                          color: Colors.white70,
                         ),
-                      );
-                    },
+                        tooltip: 'VPN-приложения',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const InstalledVpnAppsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.add_link_rounded,
+                          color: Colors.white70,
+                        ),
+                        tooltip: 'Подписки',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ServersScreen(
+                                controller: controller,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

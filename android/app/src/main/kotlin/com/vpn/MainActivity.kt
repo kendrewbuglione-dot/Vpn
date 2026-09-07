@@ -89,6 +89,13 @@ class MainActivity : FlutterActivity() {
                     )
                 }
 
+                "getInstalledVpnApps" -> {
+
+                    result.success(
+                        VpnAppDiscovery.discover(this)
+                    )
+                }
+
                 else -> {
                     result.notImplemented()
                 }
