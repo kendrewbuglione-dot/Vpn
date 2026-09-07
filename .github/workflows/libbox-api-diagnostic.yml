@@ -1,0 +1,101 @@
+name: Diagnose libbox API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect-libbox:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.7"
+
+      - name: Set up Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28
+
+      - name: Checkout sing-box
+        run: |
+          git clone --depth 1 --branch v1.13.14 \
+            https://github.com/SagerNet/sing-box.git sing-box
+
+      - name: Build libbox
+        working-directory: sing-box
+        run: |
+          make lib_install
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          make lib_android
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+
+      - name: Inspect AAR
+        run: |
+          set -eux
+
+          echo "===== AAR ====="
+          ls -lh sing-box/libbox.aar
+
+          echo "===== AAR CONTENTS ====="
+          unzip -l sing-box/libbox.aar
+
+          echo "===== EXTRACT ====="
+          mkdir -p /tmp/libbox
+          unzip -o sing-box/libbox.aar -d /tmp/libbox
+
+          echo "===== JAR FILES ====="
+          find /tmp/libbox -type f \( -name '*.jar' -o -name '*.class' \) -print
+
+          echo "===== CLASSES.JAR ====="
+          if [ -f /tmp/libbox/classes.jar ]; then
+            unzip -l /tmp/libbox/classes.jar
+          fi
+
+          echo "===== LIBBOX CLASSES ====="
+          if [ -f /tmp/libbox/classes.jar ]; then
+            jar tf /tmp/libbox/classes.jar \
+              | grep -Ei 'libbox|Platform|Service|Tun|Config|Command' \
+              | head -300
+          fi
+
+          echo "===== PUBLIC API VIA JAVAP ====="
+          if [ -f /tmp/libbox/classes.jar ]; then
+            mkdir -p /tmp/libbox/classes
+            unzip -qo /tmp/libbox/classes.jar -d /tmp/libbox/classes
+
+            find /tmp/libbox/classes -name '*.class' \
+              | sed 's#^/tmp/libbox/classes/##' \
+              | sed 's#/#.#g' \
+              | sed 's#\.class$##' \
+              | grep -Ei 'libbox|Platform|Service|Tun|Config|Command' \
+              | sort \
+              | head -200 \
+              | while read cls; do
+                  echo
+                  echo "===== $cls ====="
+                  javap -classpath /tmp/libbox/classes.jar -public "$cls" || true
+                done
+          fi
+
+      - name: Upload libbox API artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libbox-api-v1.13.14
+          path: |
+            sing-box/libbox.aar
+            /tmp/libbox/classes.jar
+          if-no-files-found: warn
