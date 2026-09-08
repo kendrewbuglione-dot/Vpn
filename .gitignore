@@ -1,2 +1,6 @@
 build/
 .dart_tool/
+
+debug-apk/
+tmp/
+home/
