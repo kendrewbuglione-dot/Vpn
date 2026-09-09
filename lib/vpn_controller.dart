@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'core/models/proxy_node.dart';
 import 'core/state/failover_state_machine.dart';
+import 'core/smart_connect/smart_connect_manager.dart';
 
 enum VpnConnectionState {
   disconnected,
@@ -37,6 +38,7 @@ class VpnController extends ChangeNotifier {
   VpnConnectionState get currentState => _currentState;
 
   final List<ProxyNode> _nodePool = <ProxyNode>[];
+  final SmartConnectManager _smartConnect = SmartConnectManager();
 
   List<ProxyNode> get nodePool =>
       List<ProxyNode>.unmodifiable(_nodePool);
