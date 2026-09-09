@@ -62,6 +62,8 @@ class SingBoxManager(
             }
         }
 
+        Libbox.checkConfig(config)
+
         val server = Libbox.newCommandServer(handler, platform)
         val options = OverrideOptions()
 
