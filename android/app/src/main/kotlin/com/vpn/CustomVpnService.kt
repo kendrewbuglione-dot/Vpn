@@ -9,9 +9,14 @@ import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.IBinder
-import android.os.ParcelFileDescriptor
 
 class CustomVpnService : VpnService() {
+
+    override fun onCreate() {
+        super.onCreate()
+        val platform = AndroidPlatformInterface(this)
+        singBoxManager = SingBoxManager(this, platform)
+    }
 
     companion object {
         const val ACTION_START = "com.vpn.START"
@@ -28,8 +33,8 @@ class CustomVpnService : VpnService() {
             private set
     }
 
-    private var tunInterface: ParcelFileDescriptor? = null
     private var vpnConfig: String? = null
+    private lateinit var singBoxManager: SingBoxManager
 
     override fun onStartCommand(
         intent: Intent?,
@@ -68,7 +73,7 @@ class CustomVpnService : VpnService() {
         try {
 
             startAsForegroundService()
-            startVpnInterface()
+            singBoxManager.start(vpnConfig ?: throw IllegalStateException("VPN config is missing"))
 
             /*
              * Пока здесь только TUN.
@@ -77,7 +82,6 @@ class CustomVpnService : VpnService() {
              *
              * SingBoxManager.start(
              *     config = vpnConfig,
-             *     tunFd = tunInterface!!.fd
              * )
              */
 
@@ -150,75 +154,21 @@ class CustomVpnService : VpnService() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun startVpnInterface() {
-
-        val builder = Builder()
-
-        builder
-            .setSession("Native VPN")
-            .setMtu(1500)
-
-        builder.addAddress(
-            "10.0.0.2",
-            32
-        )
-
-        builder.addRoute(
-            "0.0.0.0",
-            0
-        )
-
-        builder.addDnsServer(
-            "1.1.1.1"
-        )
-
-        tunInterface =
-            builder.establish()
-
-        if (tunInterface == null) {
-
-            throw IllegalStateException(
-                "Failed to establish VPN interface"
-            )
-        }
-    }
-
     private fun stopVpn() {
-
-        currentState =
-            VpnState.DISCONNECTING
-
+        currentState = VpnState.DISCONNECTING
         try {
-
-            /*
-             * На следующем этапе:
-             *
-             * SingBoxManager.stop()
-             */
-
-            tunInterface?.close()
-
+            singBoxManager.stop()
         } catch (e: Exception) {
-
             e.printStackTrace()
-
         } finally {
-
-            tunInterface = null
             vpnConfig = null
-
-            currentState =
-                VpnState.DISCONNECTED
-
+            currentState = VpnState.DISCONNECTED
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(
-                    STOP_FOREGROUND_REMOVE
-                )
+                stopForeground(STOP_FOREGROUND_REMOVE)
             } else {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
             }
-
             stopSelf()
         }
     }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -202,13 +203,16 @@ class VpnController extends ChangeNotifier {
     }
   }
 
+  String _buildSingBoxConfig() { return jsonEncode({'log': {'level': 'info'}, 'inbounds': [{'type': 'tun', 'tag': 'tun-in', 'address': ['172.19.0.1/30'], 'auto_route': true, 'strict_route': true}], 'outbounds': [_activeNode!.toSingBoxOutboundJson(), {'type': 'direct', 'tag': 'direct'}], 'route': {'final': _activeNode!.id}}); }
+
   Future<void> toggleConnection() async {
+    if (_activeNode == null) { return; }
     if (_currentState == VpnConnectionState.connected) {
       await disconnect();
       return;
     }
 
-    await connect('{}');
+    await connect(_buildSingBoxConfig());
   }
 
   void selectNode(ProxyNode node) {
