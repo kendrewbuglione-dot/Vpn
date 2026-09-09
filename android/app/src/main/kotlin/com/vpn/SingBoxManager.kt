@@ -8,6 +8,7 @@ import io.nekohasekai.libbox.Libbox
 import io.nekohasekai.libbox.OverrideOptions
 import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.SystemProxyStatus
+import io.nekohasekai.libbox.SetupOptions
 
 class SingBoxManager(
     private val context: Context,
@@ -24,7 +25,7 @@ class SingBoxManager(
             throw IllegalStateException("sing-box is already running")
         }
 
-        val setup = Libbox.SetupOptions()
+        val setup = SetupOptions()
         setup.setBasePath(platformBasePath())
         setup.setWorkingPath(platformBasePath())
         setup.setTempPath(platformTempPath())
