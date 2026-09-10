@@ -223,7 +223,7 @@ class VpnController extends ChangeNotifier {
     _currentRtt = node.latencyMs;
     notifyListeners();
 
-    await connect(_buildSingBoxConfig());
+    await connect('{}');
   }
 
   void selectNode(ProxyNode node) {
