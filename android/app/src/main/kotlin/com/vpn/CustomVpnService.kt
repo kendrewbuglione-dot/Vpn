@@ -15,7 +15,9 @@ class CustomVpnService : VpnService() {
     override fun onCreate() {
         super.onCreate()
         val platform = AndroidPlatformInterface(this)
-        singBoxManager = SingBoxManager(this, platform)
+        singBoxManager = SingBoxManager(this, platform) { stage ->
+            lastStartupStage = stage
+        }
     }
 
     companion object {
@@ -30,6 +32,10 @@ class CustomVpnService : VpnService() {
 
         @Volatile
         var currentState = VpnState.DISCONNECTED
+            private set
+
+        @Volatile
+        var lastStartupStage = "IDLE"
             private set
     }
 
@@ -85,9 +91,11 @@ class CustomVpnService : VpnService() {
              * )
              */
 
+            lastStartupStage = "CONNECTED"
             currentState = VpnState.CONNECTED
 
         } catch (e: Exception) {
+            lastStartupStage = "ERROR:${e.javaClass.simpleName}"
 
             e.printStackTrace()
 
@@ -162,6 +170,7 @@ class CustomVpnService : VpnService() {
             e.printStackTrace()
         } finally {
             vpnConfig = null
+            lastStartupStage = "IDLE"
             currentState = VpnState.DISCONNECTED
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)

@@ -83,9 +83,7 @@ class MainActivity : FlutterActivity() {
                 "getVpnStatus" -> {
 
                     result.success(
-                        CustomVpnService
-                            .currentState
-                            .name
+                        "${CustomVpnService.currentState.name}|${CustomVpnService.lastStartupStage}"
                     )
                 }
 

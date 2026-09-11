@@ -12,7 +12,8 @@ import io.nekohasekai.libbox.SetupOptions
 
 class SingBoxManager(
     private val context: Context,
-    private val platform: PlatformInterface
+    private val platform: PlatformInterface,
+    private val onStage: (String) -> Unit = {}
 ) {
     private var commandServer: CommandServer? = null
 
@@ -25,6 +26,7 @@ class SingBoxManager(
             throw IllegalStateException("sing-box is already running")
         }
 
+        onStage("SETUP_OPTIONS")
         val setup = SetupOptions()
         setup.setBasePath(platformBasePath())
         setup.setWorkingPath(platformBasePath())
@@ -35,8 +37,10 @@ class SingBoxManager(
         setup.setLogMaxLines(300)
         setup.setDebug(false)
 
+        onStage("LIBBOX_SETUP")
         Libbox.setup(setup)
 
+        onStage("HANDLER")
         val handler = object : CommandServerHandler {
             override fun getSystemProxyStatus(): SystemProxyStatus {
                 val status = SystemProxyStatus()
@@ -62,12 +66,18 @@ class SingBoxManager(
             }
         }
 
+        onStage("CONFIG_CHECK")
         Libbox.checkConfig(config)
 
+        onStage("COMMAND_SERVER")
         val server = Libbox.newCommandServer(handler, platform)
+
+        onStage("SERVICE_START")
         val options = OverrideOptions()
 
         server.startOrReloadService(config, options)
+
+        onStage("SERVICE_STARTED")
         commandServer = server
     }
 
