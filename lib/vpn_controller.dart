@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -242,7 +243,7 @@ class VpnController extends ChangeNotifier {
     _currentRtt = node.latencyMs;
     notifyListeners();
 
-    await connect('{}');
+    await connect(await rootBundle.loadString('test-config.json'));
   }
 
   void selectNode(ProxyNode node) {
