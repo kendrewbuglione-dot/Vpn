@@ -1,0 +1,146 @@
+name: VLESS Aggregator
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download VLESS sources
+        run: |
+          mkdir -p vless-aggregator
+
+          curl -fL --max-time 30 \
+            -o vless-aggregator/source1.txt \
+            'https://raw.githubusercontent.com/mehrtat/vless-collector/main/vless.txt'
+
+          curl -fL --max-time 30 \
+            -o vless-aggregator/source2.txt \
+            'https://raw.githubusercontent.com/Baarcuda/vpn-configs/master/top100-vless.txt'
+
+      - name: Decode and aggregate
+        run: |
+          python3 <<'PY'
+          import base64
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.parse import urlparse, parse_qs
+
+          root = Path("vless-aggregator")
+          lines = []
+
+          # Source 1: plain VLESS
+          lines.extend(
+              root.joinpath("source1.txt")
+              .read_text(errors="ignore")
+              .splitlines()
+          )
+
+          # Source 2: Base64 subscription
+          raw = root.joinpath("source2.txt").read_text(errors="ignore").strip()
+
+          try:
+              decoded = base64.b64decode(
+                  raw + "=" * (-len(raw) % 4)
+              ).decode("utf-8", errors="ignore")
+
+              lines.extend(decoded.splitlines())
+          except Exception as error:
+              print(f"Base64 decode failed: {error}")
+
+          nodes = []
+          seen = set()
+
+          for line in lines:
+              line = line.strip()
+
+              if not line.startswith("vless://"):
+                  continue
+
+              try:
+                  uri = urlparse(line)
+                  query = parse_qs(uri.query)
+
+                  uuid = uri.username or ""
+                  host = uri.hostname or ""
+                  port = uri.port or 0
+
+                  if not uuid or not host or not port:
+                      continue
+
+                  key = f"{uuid}|{host}|{port}"
+
+                  if key in seen:
+                      continue
+
+                  seen.add(key)
+
+                  nodes.append({
+                      "url": line,
+                      "server": host,
+                      "port": port,
+                      "uuid": uuid,
+                      "security": query.get("security", ["none"])[0],
+                      "flow": query.get("flow", [""])[0],
+                      "sni": query.get("sni", [""])[0],
+                      "public_key": query.get("pbk", [""])[0],
+                      "short_id": query.get("sid", [""])[0],
+                      "fingerprint": query.get("fp", [""])[0],
+                      "transport": query.get("type", ["tcp"])[0],
+                  })
+
+              except Exception:
+                  continue
+
+          output = {
+              "version": 1,
+              "generated_at": datetime.now(timezone.utc).isoformat(),
+              "source_count": 2,
+              "node_count": len(nodes),
+              "nodes": nodes,
+          }
+
+          root.joinpath("nodes.json").write_text(
+              json.dumps(output, ensure_ascii=False, indent=2)
+          )
+
+          print(f"Aggregated nodes: {len(nodes)}")
+          PY
+
+      - name: Validate result
+        run: |
+          python3 - <<'PY'
+          import json
+
+          with open("vless-aggregator/nodes.json") as file:
+              data = json.load(file)
+
+          count = data["node_count"]
+
+          if count == 0:
+              raise SystemExit("ERROR: zero VLESS nodes")
+
+          print(f"VALID: {count} VLESS nodes")
+          PY
+
+      - name: Prepare public data
+        run: |
+          mkdir -p public
+          cp vless-aggregator/nodes.json public/nodes.json
+
+      - name: Upload aggregated database
+        uses: actions/upload-artifact@v4
+        with:
+          name: vless-nodes
+          path: public/nodes.json
