@@ -9,6 +9,7 @@ import 'core/models/proxy_node.dart';
 import 'core/state/failover_state_machine.dart';
 import 'core/smart_connect/smart_connect_manager.dart';
 import 'services/vless_discovery_service.dart';
+import 'services/pool_scanner_service.dart';
 
 enum VpnConnectionState {
   disconnected,
@@ -42,6 +43,7 @@ class VpnController extends ChangeNotifier {
   final List<ProxyNode> _nodePool = <ProxyNode>[];
   final SmartConnectManager _smartConnect = SmartConnectManager();
   final VlessDiscoveryService _vlessDiscovery = VlessDiscoveryService();
+  final PoolScannerService _poolScanner = PoolScannerService();
 
   List<ProxyNode> get nodePool =>
       List<ProxyNode>.unmodifiable(_nodePool);
@@ -57,6 +59,43 @@ class VpnController extends ChangeNotifier {
   int _currentRtt = -1;
 
   int get currentRtt => _currentRtt;
+
+  List<PoolScanResult> _poolScanResults = <PoolScanResult>[];
+
+  List<PoolScanResult> get poolScanResults =>
+      List<PoolScanResult>.unmodifiable(_poolScanResults);
+
+  bool _isPoolScanning = false;
+
+  bool get isPoolScanning => _isPoolScanning;
+
+  Future<void> scanPool() async {
+    if (_isPoolScanning || _nodePool.isEmpty) {
+      return;
+    }
+
+    _isPoolScanning = true;
+    notifyListeners();
+
+    try {
+      _poolScanResults = await _poolScanner.scanPool(
+        _nodePool,
+        parallel: 8,
+      );
+
+      if (_poolScanResults.isNotEmpty) {
+        final best = _poolScanResults.first;
+
+        if (best.alive) {
+          _activeNode = best.node;
+          _currentRtt = best.latencyMs;
+        }
+      }
+    } finally {
+      _isPoolScanning = false;
+      notifyListeners();
+    }
+  }
 
   TunnelState get tunnelState {
     switch (_currentState) {
@@ -94,7 +133,8 @@ class VpnController extends ChangeNotifier {
   static VpnConnectionState _parseNativeState(
     String? state,
   ) {
-    switch (state?.toUpperCase()) {
+    final normalized = state?.split('|').first.toUpperCase();
+    switch (normalized) {
       case 'CONNECTING':
         return VpnConnectionState.connecting;
 

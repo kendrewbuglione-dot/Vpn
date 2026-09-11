@@ -368,5 +368,113 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
         ),
       ),
     );
+
+                                                                                                      const SizedBox(height: 12),
+
+                                                                                                      Padding(
+                                                                                                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                                                                                                        child: Container(
+                                                                                                          width: double.infinity,
+                                                                                                          padding: const EdgeInsets.all(16),
+                                                                                                          decoration: BoxDecoration(
+                                                                                                            color: const Color(0xFF111827),
+                                                                                                            borderRadius: BorderRadius.circular(16),
+                                                                                                            border: Border.all(
+                                                                                                              color: const Color(0xFF1E293B),
+                                                                                                            ),
+                                                                                                          ),
+                                                                                                          child: Column(
+                                                                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                                            children: [
+                                                                                                              Row(
+                                                                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                                                                children: [
+                                                                                                                  const Text(
+                                                                                                                    'Сканер пула',
+                                                                                                                    style: TextStyle(
+                                                                                                                      color: Colors.white,
+                                                                                                                      fontSize: 15,
+                                                                                                                      fontWeight: FontWeight.w700,
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                  Text(
+                                                                                                                    '${controller.poolScanResults.where((r) => r.alive).length}/${controller.poolScanResults.length} живых',
+                                                                                                                    style: const TextStyle(
+                                                                                                                      color: Colors.white54,
+                                                                                                                      fontSize: 12,
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                ],
+                                                                                                              ),
+                                                                                                              const SizedBox(height: 10),
+                                                                                                              SizedBox(
+                                                                                                                width: double.infinity,
+                                                                                                                child: ElevatedButton.icon(
+                                                                                                                  onPressed: controller.isPoolScanning
+                                                                                                                      ? null
+                                                                                                                      : () => controller.scanPool(),
+                                                                                                                  icon: controller.isPoolScanning
+                                                                                                                      ? const SizedBox(
+                                                                                                                          width: 16,
+                                                                                                                          height: 16,
+                                                                                                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                                                                                                        )
+                                                                                                                      : const Icon(Icons.radar_rounded),
+                                                                                                                  label: Text(
+                                                                                                                    controller.isPoolScanning
+                                                                                                                        ? 'Сканирование...'
+                                                                                                                        : 'Сканировать пул',
+                                                                                                                  ),
+                                                                                                                ),
+                                                                                                              ),
+                                                                                                              if (controller.poolScanResults.isNotEmpty) ...[
+                                                                                                                const SizedBox(height: 10),
+                                                                                                                ...controller.poolScanResults.take(5).map(
+                                                                                                                  (result) => Padding(
+                                                                                                                    padding: const EdgeInsets.symmetric(vertical: 3),
+                                                                                                                    child: Row(
+                                                                                                                      children: [
+                                                                                                                        Icon(
+                                                                                                                          result.alive
+                                                                                                                              ? Icons.check_circle_rounded
+                                                                                                                              : Icons.cancel_rounded,
+                                                                                                                          size: 16,
+                                                                                                                          color: result.alive
+                                                                                                                              ? const Color(0xFF10B981)
+                                                                                                                              : const Color(0xFFEF4444),
+                                                                                                                        ),
+                                                                                                                        const SizedBox(width: 8),
+                                                                                                                        Expanded(
+                                                                                                                          child: Text(
+                                                                                                                            result.node.remark,
+                                                                                                                            maxLines: 1,
+                                                                                                                            overflow: TextOverflow.ellipsis,
+                                                                                                                            style: const TextStyle(
+                                                                                                                              color: Colors.white70,
+                                                                                                                              fontSize: 12,
+                                                                                                                            ),
+                                                                                                                          ),
+                                                                                                                        ),
+                                                                                                                        Text(
+                                                                                                                          result.alive
+                                                                                                                              ? '${result.latencyMs} ms'
+                                                                                                                              : result.status,
+                                                                                                                          style: TextStyle(
+                                                                                                                            color: result.alive
+                                                                                                                                ? const Color(0xFF10B981)
+                                                                                                                                : Colors.white38,
+                                                                                                                            fontSize: 11,
+                                                                                                                          ),
+                                                                                                                        ),
+                                                                                                                      ],
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                ),
+                                                                                                              ],
+                                                                                                            ],
+                                                                                                          ),
+                                                                                                        ),
+                                                                                                      ),
+
   }
 }
