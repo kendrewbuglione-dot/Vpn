@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.Process
 import android.system.OsConstants
 import io.nekohasekai.libbox.ConnectionOwner
@@ -153,13 +155,13 @@ class AndroidPlatformInterface(
             connectivity.registerBestMatchingNetworkCallback(
                 request,
                 callback,
-                service.mainExecutor
+                Handler(Looper.getMainLooper())
             )
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             connectivity.requestNetwork(
                 request,
                 callback,
-                service.mainExecutor
+                Handler(Looper.getMainLooper())
             )
         } else {
             connectivity.registerDefaultNetworkCallback(callback)
