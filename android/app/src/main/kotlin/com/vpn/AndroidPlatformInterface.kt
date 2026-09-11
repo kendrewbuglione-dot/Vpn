@@ -113,22 +113,86 @@ class AndroidPlatformInterface(
         return owner
     }
 
+    private var defaultNetworkCallback: ConnectivityManager.NetworkCallback? = null
+
     override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener) {
-        val network = connectivity.activeNetwork ?: return
+        closeDefaultInterfaceMonitor(listener)
+
+        val request = android.net.NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+            .build()
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                updateDefaultInterface(listener, network)
+            }
+
+            override fun onCapabilitiesChanged(
+                network: android.net.Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
+                updateDefaultInterface(listener, network)
+            }
+
+            override fun onLinkPropertiesChanged(
+                network: android.net.Network,
+                linkProperties: android.net.LinkProperties
+            ) {
+                updateDefaultInterface(listener, network)
+            }
+
+            override fun onLost(network: android.net.Network) {
+                listener.updateDefaultInterface("", 0, false, false)
+            }
+        }
+
+        defaultNetworkCallback = callback
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            connectivity.registerBestMatchingNetworkCallback(
+                request,
+                callback,
+                service.mainExecutor
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            connectivity.requestNetwork(
+                request,
+                callback,
+                service.mainExecutor
+            )
+        } else {
+            connectivity.registerDefaultNetworkCallback(callback)
+        }
+    }
+
+    override fun closeDefaultInterfaceMonitor(listener: InterfaceUpdateListener) {
+        val callback = defaultNetworkCallback ?: return
+        runCatching {
+            connectivity.unregisterNetworkCallback(callback)
+        }
+        defaultNetworkCallback = null
+    }
+
+    private fun updateDefaultInterface(
+        listener: InterfaceUpdateListener,
+        network: android.net.Network
+    ) {
         val capabilities = connectivity.getNetworkCapabilities(network) ?: return
         val linkProperties = connectivity.getLinkProperties(network) ?: return
         val name = linkProperties.interfaceName ?: return
 
-        val interfaceIndex = runCatching { NetworkInterface.getByName(name)?.index ?: 0 }.getOrDefault(0)
+        val interfaceIndex =
+            runCatching {
+                NetworkInterface.getByName(name)?.index ?: 0
+            }.getOrDefault(0)
+
         listener.updateDefaultInterface(
             name,
             interfaceIndex,
             true,
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
         )
-    }
-
-    override fun closeDefaultInterfaceMonitor(listener: InterfaceUpdateListener) {
     }
 
     override fun getInterfaces(): NetworkInterfaceIterator {

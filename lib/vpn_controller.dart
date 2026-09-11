@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'core/models/proxy_node.dart';
 import 'core/state/failover_state_machine.dart';
 import 'core/smart_connect/smart_connect_manager.dart';
+import 'services/vless_discovery_service.dart';
 
 enum VpnConnectionState {
   disconnected,
@@ -39,6 +40,7 @@ class VpnController extends ChangeNotifier {
 
   final List<ProxyNode> _nodePool = <ProxyNode>[];
   final SmartConnectManager _smartConnect = SmartConnectManager();
+  final VlessDiscoveryService _vlessDiscovery = VlessDiscoveryService();
 
   List<ProxyNode> get nodePool =>
       List<ProxyNode>.unmodifiable(_nodePool);
@@ -134,6 +136,23 @@ class VpnController extends ChangeNotifier {
 
   Future<void> initialize() async {
     await refreshState();
+
+    try {
+      final discoveredNodes = await _vlessDiscovery.discover();
+
+      if (discoveredNodes.isNotEmpty) {
+        _nodePool
+          ..clear()
+          ..addAll(discoveredNodes);
+
+        _activeNode = _nodePool.first;
+        _currentRtt = _activeNode?.latencyMs ?? -1;
+
+        notifyListeners();
+      }
+    } catch (_) {
+      // Автопоиск не должен ломать запуск приложения.
+    }
   }
 
   Future<void> connect(
