@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'dart:async';
 
@@ -7,7 +6,6 @@ import 'package:flutter/services.dart';
 
 import 'core/models/proxy_node.dart';
 import 'core/state/failover_state_machine.dart';
-import 'core/smart_connect/smart_connect_manager.dart';
 import 'services/vless_discovery_service.dart';
 import 'services/pool_scanner_service.dart';
 
