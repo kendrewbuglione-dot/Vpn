@@ -38,6 +38,10 @@ class VpnController extends ChangeNotifier {
 
   VpnConnectionState get currentState => _currentState;
 
+  String? _lastRawStatus;
+
+  String? get lastRawStatus => _lastRawStatus;
+
   final List<ProxyNode> _nodePool = <ProxyNode>[];
   final VlessDiscoveryService _vlessDiscovery = VlessDiscoveryService();
   final PoolScannerService _poolScanner = PoolScannerService();
@@ -157,6 +161,11 @@ class VpnController extends ChangeNotifier {
         'getVpnStatus',
       );
 
+      if (nativeState != _lastRawStatus) {
+        _lastRawStatus = nativeState;
+        notifyListeners();
+      }
+
       final parsedState =
           _parseNativeState(nativeState);
 
@@ -164,11 +173,27 @@ class VpnController extends ChangeNotifier {
 
       return parsedState;
     } on PlatformException catch (e) {
+      _lastRawStatus = 'ERROR:${e.code}:${e.message}';
+      notifyListeners();
+
       _updateState(VpnConnectionState.error);
 
       throw StateError(
         'Failed to get VPN status: ${e.message}',
       );
+    }
+  }
+
+  Future<void> _pollStatusForDiagnostics() async {
+    for (var i = 0; i < 16; i++) {
+      final state = await refreshState();
+
+      if (state == VpnConnectionState.connected ||
+          state == VpnConnectionState.error) {
+        return;
+      }
+
+      await Future.delayed(const Duration(milliseconds: 400));
     }
   }
 
@@ -222,9 +247,12 @@ class VpnController extends ChangeNotifier {
         return;
       }
 
-      await refreshState();
+      await _pollStatusForDiagnostics();
     } on PlatformException catch (e) {
       _failuresCount++;
+      _lastRawStatus = 'ERROR:${e.code}:${e.message}';
+      notifyListeners();
+
       _updateState(VpnConnectionState.error);
 
       throw StateError(

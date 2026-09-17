@@ -18,6 +18,8 @@ class MinimalHomeScreen extends StatefulWidget {
 }
 
 class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
+  String? _lastShownRawStatus;
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +32,40 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
     super.dispose();
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    setState(() {});
+    _maybeShowStatusSnackbar();
+  }
+
+  void _maybeShowStatusSnackbar() {
+    final raw = widget.controller.lastRawStatus;
+
+    if (raw == null || raw == _lastShownRawStatus) {
+      return;
+    }
+
+    _lastShownRawStatus = raw;
+
+    if (!mounted) {
+      return;
+    }
+
+    final isError = raw.toUpperCase().contains('ERROR');
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF1E293B),
+        duration: Duration(seconds: isError ? 6 : 2),
+        content: Text(
+          raw,
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
 
   Color _accentColor(TunnelState state) {
     switch (state) {
@@ -103,6 +138,10 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
               'Системный сокет',
               'Защищен (VpnService.protect)',
             ),
+            _diagRow(
+              'Статус (raw)',
+              widget.controller.lastRawStatus ?? '—',
+            ),
             const SizedBox(height: 12),
           ],
         ),
@@ -123,12 +162,15 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
               fontSize: 14,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -225,7 +267,8 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
             Text(
               isOnline
                   ? 'Трафик зашифрован'
-                  : 'Нажмите кнопку для старта',
+                  : (controller.lastRawStatus ?? 'Нажмите кнопку для старта'),
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white38,
                 fontSize: 14,
@@ -471,7 +514,5 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
         ),
       ),
     );
-
-
   }
 }
