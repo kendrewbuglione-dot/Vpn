@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -291,6 +292,27 @@ class VpnController extends ChangeNotifier {
   }
 
 
+  String _buildConfigForNode(ProxyNode node) {
+    final config = {
+      'log': {'level': 'info'},
+      'inbounds': [
+        {
+          'type': 'tun',
+          'tag': 'tun-in',
+          'address': ['172.19.0.1/30'],
+          'auto_route': true,
+          'strict_route': true,
+        }
+      ],
+      'outbounds': [
+        node.toSingBoxOutboundJson(),
+        {'type': 'direct', 'tag': 'direct'},
+      ],
+      'route': {'final': node.id},
+    };
+    return jsonEncode(config);
+  }
+
   Future<void> toggleConnection() async {
     if (_nodePool.isEmpty) {
       return;
@@ -307,7 +329,7 @@ class VpnController extends ChangeNotifier {
     _currentRtt = node.latencyMs;
     notifyListeners();
 
-    await connect(await rootBundle.loadString('test-config.json'));
+    await connect(_buildConfigForNode(node));
   }
 
   void selectNode(ProxyNode node) {
