@@ -218,7 +218,8 @@ class AndroidPlatformInterface(
 
                 result.addresses = object : StringIterator {
                     private val formattedAddresses = networkInterface.interfaceAddresses.mapNotNull { ia ->
-                        val hostAddress = ia.address?.hostAddress
+                        val rawHostAddress = ia.address?.hostAddress
+                        val hostAddress = rawHostAddress?.substringBefore("%")
                         if (hostAddress.isNullOrEmpty()) null else "$hostAddress/${ia.networkPrefixLength}"
                     }
                     private val values = formattedAddresses.iterator()
