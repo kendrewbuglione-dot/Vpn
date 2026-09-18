@@ -217,10 +217,14 @@ class AndroidPlatformInterface(
                 }
 
                 result.addresses = object : StringIterator {
-                    private val values = networkInterface.interfaceAddresses.map { it.toString() }.iterator()
+                    private val formattedAddresses = networkInterface.interfaceAddresses.mapNotNull { ia ->
+                        val hostAddress = ia.address?.hostAddress
+                        if (hostAddress.isNullOrEmpty()) null else "$hostAddress/${ia.networkPrefixLength}"
+                    }
+                    private val values = formattedAddresses.iterator()
 
                     override fun hasNext(): Boolean = values.hasNext()
-                    override fun len(): Int = networkInterface.interfaceAddresses.size
+                    override fun len(): Int = formattedAddresses.size
                     override fun next(): String = values.next()
                 }
 
