@@ -466,42 +466,185 @@ class _MinimalHomeScreenState extends State<MinimalHomeScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: (controller.isDeepScanning ||
+                                  controller.poolScanResults
+                                      .where((r) => r.alive)
+                                      .isEmpty)
+                              ? null
+                              : () => controller.deepScanTopNodes(),
+                          icon: controller.isDeepScanning
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.wifi_tethering_rounded),
+                          label: Text(
+                            controller.isDeepScanning
+                                ? 'Реальная проверка...'
+                                : 'Реальная проверка (топ-10)',
+                          ),
+                        ),
+                      ),
+                      if (controller.deepScanResults.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ...controller.deepScanResults.map(
+                          (result) => InkWell(
+                            onTap: result.alive
+                                ? () => controller.connectToNode(result.node)
+                                : null,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    result.alive
+                                        ? Icons.verified_rounded
+                                        : Icons.block_rounded,
+                                    size: 16,
+                                    color: result.alive
+                                        ? const Color(0xFF10B981)
+                                        : Colors.redAccent,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${result.node.remark} · ${result.status}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: (controller.isDeepScanning ||
+                                  controller.poolScanResults
+                                      .where((r) => r.alive)
+                                      .isEmpty)
+                              ? null
+                              : () => controller.deepScanTopNodes(),
+                          icon: controller.isDeepScanning
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.wifi_tethering_rounded),
+                          label: Text(
+                            controller.isDeepScanning
+                                ? 'Реальная проверка...'
+                                : 'Реальная проверка (топ-10)',
+                          ),
+                        ),
+                      ),
+                      if (controller.deepScanResults.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ...controller.deepScanResults.map(
+                          (result) => InkWell(
+                            onTap: result.alive
+                                ? () => controller.connectToNode(result.node)
+                                : null,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    result.alive
+                                        ? Icons.verified_rounded
+                                        : Icons.block_rounded,
+                                    size: 16,
+                                    color: result.alive
+                                        ? const Color(0xFF10B981)
+                                        : Colors.redAccent,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${result.node.remark} · ${result.status}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       if (controller.poolScanResults.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         ...controller.poolScanResults.take(5).map(
-                          (result) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  result.alive
-                                      ? Icons.check_circle_rounded
-                                      : Icons.cancel_rounded,
-                                  size: 16,
-                                  color: result.alive
-                                      ? const Color(0xFF10B981)
-                                      : Colors.redAccent,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${result.node.remark} · ${result.node.address}:${result.node.port}',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
+                          (result) => InkWell(
+                            onTap: result.alive
+                                ? () => controller.connectToNode(result.node)
+                                : null,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    result.alive
+                                        ? Icons.check_circle_rounded
+                                        : Icons.cancel_rounded,
+                                    size: 16,
+                                    color: result.alive
+                                        ? const Color(0xFF10B981)
+                                        : Colors.redAccent,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${result.node.remark} · ${result.node.address}:${result.node.port}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (result.alive)
-                                  Text(
-                                    '${result.latencyMs} мс',
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 11,
+                                  if (result.alive)
+                                    Text(
+                                      '${result.latencyMs} мс',
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 11,
+                                      ),
                                     ),
-                                  ),
-                              ],
+                                  if (result.alive)
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 6),
+                                      child: Icon(
+                                        Icons.power_settings_new_rounded,
+                                        size: 14,
+                                        color: Colors.white38,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

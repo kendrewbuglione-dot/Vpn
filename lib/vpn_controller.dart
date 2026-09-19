@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -97,6 +98,90 @@ class VpnController extends ChangeNotifier {
       _isPoolScanning = false;
       notifyListeners();
     }
+  }
+
+  bool _isDeepScanning = false;
+
+  bool get isDeepScanning => _isDeepScanning;
+
+  List<PoolScanResult> _deepScanResults = <PoolScanResult>[];
+
+  List<PoolScanResult> get deepScanResults =>
+      List<PoolScanResult>.unmodifiable(_deepScanResults);
+
+  Future<bool> _verifyRealConnectivity() async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 4);
+
+      final request = await client
+          .getUrl(Uri.parse('https://1.1.1.1/cdn-cgi/trace'))
+          .timeout(const Duration(seconds: 4));
+
+      final response =
+          await request.close().timeout(const Duration(seconds: 4));
+
+      await response.drain();
+      client.close(force: true);
+
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> deepScanTopNodes({int count = 10}) async {
+    if (_isDeepScanning) {
+      return;
+    }
+
+    final candidates =
+        _poolScanResults.where((r) => r.alive).take(count).toList();
+
+    if (candidates.isEmpty) {
+      return;
+    }
+
+    _isDeepScanning = true;
+    _deepScanResults = <PoolScanResult>[];
+    notifyListeners();
+
+    final wasConnected = _currentState == VpnConnectionState.connected;
+
+    if (wasConnected) {
+      await disconnect();
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    for (final candidate in candidates) {
+      var isReallyAlive = false;
+
+      try {
+        await connect(_buildConfigForNode(candidate.node));
+        await Future.delayed(const Duration(milliseconds: 900));
+        isReallyAlive = await _verifyRealConnectivity();
+      } catch (_) {
+        isReallyAlive = false;
+      }
+
+      _deepScanResults.add(
+        PoolScanResult(
+          node: candidate.node,
+          alive: isReallyAlive,
+          latencyMs: candidate.latencyMs,
+          status: isReallyAlive ? 'REAL TRAFFIC OK' : 'NO REAL TRAFFIC',
+          checkedAt: DateTime.now(),
+        ),
+      );
+
+      await disconnect();
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      notifyListeners();
+    }
+
+    _isDeepScanning = false;
+    notifyListeners();
   }
 
   TunnelState get tunnelState {
@@ -329,6 +414,17 @@ class VpnController extends ChangeNotifier {
     _currentRtt = node.latencyMs;
     notifyListeners();
 
+    await connect(_buildConfigForNode(node));
+  }
+
+  Future<void> connectToNode(ProxyNode node) async {
+    if (_currentState == VpnConnectionState.connected ||
+        _currentState == VpnConnectionState.connecting) {
+      await disconnect();
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    selectNode(node);
     await connect(_buildConfigForNode(node));
   }
 
